@@ -69,12 +69,6 @@ Now you can run your commands 🚀
 
 ---
 
-## 📜 License
-
-This project is licensed under the [MIT License](LICENSE).
-
----
-
 ### 💡 Contributing
 
 PRs and suggestions are welcome! If you have ideas for new features, improvements, or documentation, feel free to open an issue.
