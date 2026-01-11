@@ -4,6 +4,7 @@ mod modules;
 use modules::prossess::*;
 use modules::tokenizer::*;
 
+// Tracks if we are currently inside quotes to handle multi-line input
 #[derive(PartialEq)]
 enum QuoteState {
     None,
@@ -12,12 +13,15 @@ enum QuoteState {
 }
 
 fn main() {
+    // 1. The main shell loop: keeps the program running until you type 'exit'
     loop {
         let mut full_input = String::new();
         let mut quote_state = QuoteState::None;
         let mut first_line = true;
 
+        // 2. The input gathering loop: handles multi-line input (quotes or backslashes)
         loop {
+            // Show '$ ' for a new command, or '> ' if we are continuing a previous line
             if first_line {
                 print!("$ ");
             } else {
@@ -31,7 +35,7 @@ fn main() {
 
             let mut line = String::new();
             match io::stdin().read_line(&mut line) {
-                Ok(0) => {
+                Ok(0) => { // Handle End-of-File (Ctrl+D)
                     if !first_line {
                         eprintln!();
                         break;
@@ -41,20 +45,23 @@ fn main() {
                     }
                 }
                 Ok(_) => {
+                    // Update state to see if we opened or closed quotes
                     quote_state = update_quote_state(&line, quote_state);
 
+                    // Check if the line ends in a backslash ( \ ) for continuation
                     let line_continuation = is_line_continuation(&line);
 
                     if line_continuation {
                         let mut trimmed_line = line.trim_end().to_string();
-                        trimmed_line.pop();
+                        trimmed_line.pop(); // Remove the trailing backslash
                         full_input.push_str(&trimmed_line);
                         first_line = false;
-                        continue;
+                        continue; // Keep reading the next line
                     }
 
                     full_input.push_str(&line);
 
+                    // If quotes are closed and no backslash continuation, command is complete
                     if quote_state == QuoteState::None {
                         break;
                     }
@@ -74,6 +81,7 @@ fn main() {
             continue;
         }
 
+        // 3. Tokenize the input (break "ls -l" into ["ls", "-l"])
         let tokens = match tokenizer(input) {
             Ok(tokens) => tokens,
             Err(e) => {
@@ -82,6 +90,7 @@ fn main() {
             }
         };
 
+        // 4. Process and execute the command
         match prossess(tokens) {
             Ok(v) => {
                 if v.as_str() == "exit" {
@@ -96,6 +105,7 @@ fn main() {
     }
 }
 
+/// Detects if the line ends with an unescaped backslash, meaning the command continues
 fn is_line_continuation(line: &str) -> bool {
     let trimmed = line.trim_end();
     if !trimmed.ends_with('\\') {
@@ -111,9 +121,11 @@ fn is_line_continuation(line: &str) -> bool {
         }
     }
 
+    // Only an odd number of backslashes at the end means "continue"
     backslash_count % 2 == 1
 }
 
+/// Scans the line to toggle between quote states
 fn update_quote_state(line: &str, mut current_state: QuoteState) -> QuoteState {
     let mut is_esc = false;
 
@@ -125,6 +137,7 @@ fn update_quote_state(line: &str, mut current_state: QuoteState) -> QuoteState {
 
         match ch {
             '\\' => {
+                // Backslashes don't escape inside single quotes
                 if current_state != QuoteState::Single {
                     is_esc = true;
                 }

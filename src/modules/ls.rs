@@ -1,3 +1,4 @@
+/* ... imports ... */
 use {
     crate::modules::utils::fix_path,
     chrono::{DateTime, Local},
@@ -11,6 +12,7 @@ use {
     term_size,
 };
 
+// Helper struct to store entry names and their full paths
 struct DirE {
     name: String,
     path: PathBuf,
@@ -22,6 +24,7 @@ pub fn ls(arr: &[String]) -> Result<String, String> {
     let mut tag_f = false;
     let mut vars = Vec::new();
 
+    // 1. Parse flags and target paths
     for op in arr {
         if op == "-" {
             return Err(format!("ls: cannot access '-': No such file or directory"));
@@ -38,6 +41,8 @@ pub fn ls(arr: &[String]) -> Result<String, String> {
             vars.push(fix_path(op));
         }
     }
+
+    // Default to current directory if no path provided
     if vars.is_empty() {
         vars.push(".".to_string());
     }
@@ -45,9 +50,11 @@ pub fn ls(arr: &[String]) -> Result<String, String> {
     let mut result_parts: Vec<String> = Vec::new();
     let mut is_first_item = true;
 
+    // 2. Process each path provided    
     for var in &vars {
         let path = PathBuf::from(var);
 
+        // Fetch and format directory contents
         match fs::symlink_metadata(&path) {
             Ok(metadata) => {
                 if metadata.is_dir() {
@@ -121,6 +128,7 @@ pub fn ls(arr: &[String]) -> Result<String, String> {
     Ok(output)
 }
 
+/// Reads the directory, sorts entries, and handles hidden files
 fn get_directory_entries(path: &str, tag_a: bool) -> Result<Vec<DirE>, String> {
     let mut entries: Vec<DirE> = fs::read_dir(path)
         .map_err(|e| format!("ls: cannot access '{}': {}", path, e))?
@@ -169,6 +177,7 @@ fn get_directory_entries(path: &str, tag_a: bool) -> Result<Vec<DirE>, String> {
     Ok(entries)
 }
 
+/// Formats a single file/folder entry for display
 fn format_entry(path: &Path, entre: &DirE, tag_l: bool, tag_f: bool) -> Result<String, String> {
     let metadata = fs::symlink_metadata(path).map_err(|e| e.to_string())?;
     let mut name_display = quote_name(&entre.name);
@@ -285,6 +294,7 @@ fn format_entry(path: &Path, entre: &DirE, tag_l: bool, tag_f: bool) -> Result<S
     ))
 }
 
+/* ... Helper functions for UID/GID names, ACL checks, and column wrapping ... */
 fn get_uid_name(uid: u32) -> String {
     unsafe {
         let pw = getpwuid(uid);

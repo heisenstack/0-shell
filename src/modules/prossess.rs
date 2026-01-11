@@ -4,9 +4,14 @@ use {
     crate::modules::mv::mv, crate::modules::pwd::pwd, crate::modules::rm::rm,
 };
 
+/// Takes a vector of strings (command + arguments) and routes them to the right function
 pub fn prossess(value: Vec<String>) -> Result<String, String> {
+    // The first element is the command name (e.g., "ls")
     let cmd = value[0].clone();
+
+    // Match the command name to its corresponding logic
     match cmd.as_str() {
+        // For most commands, pass everything after the first element as arguments
         "cp" => match cp(&value[1..]) {
             Ok(s) => Ok(s),
             Err(e) => Err(e),
@@ -24,6 +29,7 @@ pub fn prossess(value: Vec<String>) -> Result<String, String> {
             Err(e) => Err(e),
         },
         "echo" => {
+            // Echo is unique: it joins all arguments back into a single string
             let args = if value.len() > 1 {
                 value[1..].join(" ")
             } else {
@@ -50,7 +56,9 @@ pub fn prossess(value: Vec<String>) -> Result<String, String> {
             Ok(s) => Ok(s),
             Err(e) => Err(e),
         },
+        // Handle the shell exit command
         "exit" => Ok("exit".to_string()),
+        // Return an error if the user typed something unknown
         _ => Err(format!("Command '{}' not found", cmd)),
     }
 }
